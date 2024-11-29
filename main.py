@@ -1,18 +1,17 @@
 import discord
-import os
 from discord.ext import commands
-from discord import app_commands
+import asyncio
+import time
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.voice_states = True
-client = commands.Bot(command_prefix='$', intents=intents)
+client = commands.Bot(command_prefix='/', intents=intents)
 
 class VoteKickButton(discord.ui.View):
-    def __init__(self, user_to_kick, embed, ctx, voice_members):
+    def __init__(self, embed, ctx, voice_members):
         super().__init__()
-        self.user_to_kick = user_to_kick
         self.embed = embed
         self.ctx = ctx
         self.voice_members = voice_members
@@ -58,19 +57,24 @@ async def votekick(interaction: discord.Interaction, user: discord.Member):
     if user == interaction.user:
         await interaction.response.send_message("You cannot vote yourself.",ephemeral=True)
         return
+    if user not in interaction.user.voice:
+        await interaction.response.send_message("You can only vote someone in your vc",ephemeral=True)
+        return
     if interaction.user.voice is None:
-        await interaction.response.send_message("you are not in a voice channel!", ephemeral=True)
+        await interaction.response.send_message("You are not in a voice channel!", ephemeral=True)
         return
     voice_members = interaction.user.voice.channel.members
 
     embed = discord.Embed(
         color=discord.Color.purple(),
-        description=f'### Vote by: {interaction.user.mention}\nKick player: {user.mention}'
+        description=f'### Vote by: {interaction.user.mention}\nKick player: {user.mention}\n'
     )
     embed.add_field(name="✅ for YES: 0", value="❌ for NO: 0")
 
-    view = VoteKickButton(user_to_kick=user, embed=embed, ctx=interaction,voice_members=voice_members)
+    view = VoteKickButton(embed=embed, ctx=interaction,voice_members=voice_members)
+
     await interaction.response.send_message(embed=embed, view=view)
+    
 
 with open("token.0","r",encoding="utf-8") as f:
     TOKEN = f.read()
